@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <title>Moj Screen Share</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #121212; color: white; }
+        video { width: 80%; border: 2px solid #00ff00; margin-top: 20px; border-radius: 10px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #00ff00; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Live Screen Share</h1>
+    <button id="startBtn">Pokreni deljenje ekrana</button>
+    <br>
+    <video id="videoElement" autoplay playsinline></video>
+
+    <script>
+        const videoElem = document.getElementById("videoElement");
+        const startBtn = document.getElementById("startBtn");
+
+        async function startCapture() {
+            try {
+                
+                const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" },
+                    audio: true
+                });
+                
+              
+                videoElem.srcObject = displayStream;
+            } catch (err) {
+                console.error("Greška: " + err);
+            }
+        }
+
+        startBtn.addEventListener("click", startCapture);
+    </script>
+</body>
+</html>
