@@ -1,42 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html lang="sr">
 <head>
     <title>Live Stream</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         body { background: #000; color: #0f0; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
         video { width: 90%; max-width: 1000px; border: 2px solid #0f0; border-radius: 10px; background: #111; }
-        #controls { margin-bottom: 20px; display: none; } /* Sakriveno po defaultu */
-        .stats { font-size: 20px; margin: 10px; color: #00d1ff; }
+        .stats { font-size: 18px; margin: 10px; color: #00d1ff; }
+        #admin-panel { display: none; background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed #0f0; }
+        button { padding: 10px 20px; cursor: pointer; background: #0f0; border: none; font-weight: bold; border-radius: 5px; }
     </style>
 </head>
 <body>
     <h1>LIVE STREAM</h1>
-    <div class="stats">Gledalaca uzivo: <span id="counter">0</span></div>
-    
-    <div id="controls">
-        <button id="btn" style="padding: 10px 20px; cursor: pointer; font-weight: bold;">POKRENI SCREEN SHARE</button>
+    <div class="stats">Gledalaca: <span id="counter">0</span></div>
+
+    <div id="admin-panel">
+        <p style="margin-top:0;">ADMIN PANEL</p>
+        <button id="start-btn">POKRENI SCREEN SHARE</button>
     </div>
 
-    <video id="v" autoplay playsinline></video>
+    <video id="remote-video" autoplay playsinline></video>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const video = document.getElementById('v');
+        const videoElem = document.getElementById('remote-video');
         const counter = document.getElementById('counter');
-        const controls = document.getElementById('controls');
+        const adminPanel = document.getElementById('admin-panel');
+        const startBtn = document.getElementById('start-btn');
 
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === '1') {
-            controls.style.display = 'block';
+
+        const peer = new Peer('moj-jedinstveni-strim-id-123');
+
+
+        const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
+        if (isAdmin) {
+            adminPanel.style.display = 'block';
         }
 
         socket.on('count', (n) => { counter.innerText = n; });
-        document.getElementById('btn').onclick = async () => {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            video.srcObject = stream;
 
-        };
+
+        if (isAdmin) {
+            startBtn.onclick = async () => {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                videoElem.srcObject = stream;
+
+                peer.on('call', (call) => {
+                    call.answer(stream);
+                });
+            };
+        } 
+
+        else {
+
+            setTimeout(() => {
+                const call = peer.call('moj-jedinstveni-strim-id-123', new MediaStream());
+                call.on('stream', (remoteStream) => {
+                    videoElem.srcObject = remoteStream;
+                });
+            }, 2000); 
+        }
     </script>
 </body>
 </html>
