@@ -6,22 +6,22 @@ const path = require('path');
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 let viewers = 0;
 io.on('connection', (socket) => {
     viewers++;
     io.emit('count', viewers);
+
+    socket.on('screen-data', (data) => {
+        socket.broadcast.emit('show-screen', data);
+    });
+
     socket.on('disconnect', () => {
         viewers--;
         io.emit('count', viewers);
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log('Server radi na portu ' + PORT);
 });
