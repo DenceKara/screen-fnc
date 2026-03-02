@@ -1,40 +1,42 @@
 <!DOCTYPE html>
-<html lang="sr">
+<html>
 <head>
-    <title>Moj Screen Share</title>
+    <title>Live Stream</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #121212; color: white; }
-        video { width: 80%; border: 2px solid #00ff00; margin-top: 20px; border-radius: 10px; }
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #00ff00; border: none; border-radius: 5px; }
+        body { background: #000; color: #0f0; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
+        video { width: 90%; max-width: 1000px; border: 2px solid #0f0; border-radius: 10px; background: #111; }
+        #controls { margin-bottom: 20px; display: none; } /* Sakriveno po defaultu */
+        .stats { font-size: 20px; margin: 10px; color: #00d1ff; }
     </style>
 </head>
 <body>
+    <h1>LIVE STREAM</h1>
+    <div class="stats">Gledalaca uzivo: <span id="counter">0</span></div>
+    
+    <div id="controls">
+        <button id="btn" style="padding: 10px 20px; cursor: pointer; font-weight: bold;">POKRENI SCREEN SHARE</button>
+    </div>
 
-    <h1>Live Screen Share</h1>
-    <button id="startBtn">Pokreni deljenje ekrana</button>
-    <br>
-    <video id="videoElement" autoplay playsinline></video>
+    <video id="v" autoplay playsinline></video>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        const videoElem = document.getElementById("videoElement");
-        const startBtn = document.getElementById("startBtn");
+        const socket = io();
+        const video = document.getElementById('v');
+        const counter = document.getElementById('counter');
+        const controls = document.getElementById('controls');
 
-        async function startCapture() {
-            try {
-                
-                const displayStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { cursor: "always" },
-                    audio: true
-                });
-                
-              
-                videoElem.srcObject = displayStream;
-            } catch (err) {
-                console.error("Greška: " + err);
-            }
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('admin') === '1') {
+            controls.style.display = 'block';
         }
 
-        startBtn.addEventListener("click", startCapture);
+        socket.on('count', (n) => { counter.innerText = n; });
+        document.getElementById('btn').onclick = async () => {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            video.srcObject = stream;
+
+        };
     </script>
 </body>
 </html>
