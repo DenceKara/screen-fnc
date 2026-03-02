@@ -1,66 +1,94 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-    <title>Live Stream</title>
+    <title>Live Stream PRO</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background: #000; color: #0f0; text-align: center; font-family: sans-serif; margin: 0; padding: 20px; }
-        video { width: 90%; max-width: 1000px; border: 2px solid #0f0; border-radius: 10px; background: #111; }
-        .stats { font-size: 18px; margin: 10px; color: #00d1ff; }
-        #admin-panel { display: none; background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed #0f0; }
-        button { padding: 10px 20px; cursor: pointer; background: #0f0; border: none; font-weight: bold; border-radius: 5px; }
+        body { background: #0f0f0f; color: white; text-align: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .video-container { position: relative; width: 90%; max-width: 1000px; margin: 0 auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        video { width: 100%; display: block; }
+        #admin-ui { display: none; background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
+        .status-bar { padding: 10px; font-size: 14px; background: #222; display: flex; justify-content: space-around; }
+        button { padding: 12px 24px; cursor: pointer; background: #ff0000; border: none; color: white; font-weight: bold; border-radius: 6px; transition: 0.3s; }
+        button:hover { background: #cc0000; transform: scale(1.05); }
+        .live-tag { background: red; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
     </style>
 </head>
 <body>
-    <h1>LIVE STREAM</h1>
-    <div class="stats">Gledalaca: <span id="counter">0</span></div>
 
-    <div id="admin-panel">
-        <p style="margin-top:0;">ADMIN PANEL</p>
-        <button id="start-btn">POKRENI SCREEN SHARE</button>
+    <div id="admin-ui">
+        <h3>ADMIN KONTROLE</h3>
+        <button id="start-btn">KRENI UZIVO</button>
+        <p style="font-size: 12px; color: #888;">Voyo kazes</p>
     </div>
 
-    <video id="remote-video" autoplay playsinline></video>
+    <div class="video-container">
+        <div class="status-bar">
+            <span><span class="live-tag">LIVE</span> Prenos</span>
+            <span>Gledalaca: <b id="counter">0</b></span>
+        </div>
+        <video id="main-video" controls autoplay playsinline></video>
+    </div>
 
     <script>
         const socket = io();
-        const videoElem = document.getElementById('remote-video');
+        const videoElem = document.getElementById('main-video');
         const counter = document.getElementById('counter');
-        const adminPanel = document.getElementById('admin-panel');
+        const adminUI = document.getElementById('admin-ui');
         const startBtn = document.getElementById('start-btn');
 
-
-        const peer = new Peer('moj-jedinstveni-strim-id-123');
-
+  
+        const MY_STREAM_ID = 'dence-kara-stream-2026';
+        const peer = new Peer(MY_STREAM_ID);
 
         const isAdmin = new URLSearchParams(window.location.search).get('admin') === '1';
-        if (isAdmin) {
-            adminPanel.style.display = 'block';
-        }
+        if (isAdmin) adminUI.style.display = 'block';
 
         socket.on('count', (n) => { counter.innerText = n; });
 
 
         if (isAdmin) {
             startBtn.onclick = async () => {
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                videoElem.srcObject = stream;
+                try {
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                        video: { cursor: "always" }, 
+                        audio: true 
+                    });
+                    videoElem.srcObject = stream;
 
-                peer.on('call', (call) => {
-                    call.answer(stream);
-                });
+                    peer.on('call', (call) => {
+                        call.answer(stream);
+                    });
+                    
+                    alert("Strim je pokrenut! Sada drugi mogu da te vide.");
+                } catch (err) {
+                    console.error("Greška kod screen share-a:", err);
+                }
             };
         } 
 
+      
         else {
+            function connectToStream() {
+           
+                const viewerPeer = new Peer();
+                viewerPeer.on('open', () => {
+                    const call = viewerPeer.call(MY_STREAM_ID, new MediaStream());
+                    
+                    call.on('stream', (remoteStream) => {
+                        videoElem.srcObject = remoteStream;
+                    });
 
-            setTimeout(() => {
-                const call = peer.call('moj-jedinstveni-strim-id-123', new MediaStream());
-                call.on('stream', (remoteStream) => {
-                    videoElem.srcObject = remoteStream;
+                    call.on('error', (err) => {
+                        console.log("Strim još nije aktivan, pokušavam ponovo...");
+                        setTimeout(connectToStream, 5000);
+                    });
                 });
-            }, 2000); 
+            }
+            
+
+            setTimeout(connectToStream, 2000);
         }
     </script>
 </body>
